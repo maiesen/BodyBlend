@@ -15,24 +15,24 @@ namespace BodyBlend.Utils
 		private static NestedDictionaryList<string, string, BlendControlTemplate> RegisteredSkinBlendControls
 			= new NestedDictionaryList<string, string, BlendControlTemplate>();
 
-		public static void RegisterSkinBlendControl(string skinName, string blendName, List<BlendControlTemplate> templates)
+		public static void RegisterSkinBlendControl(string skinNameToken, string blendName, List<BlendControlTemplate> templates)
 		{
-			if (!RegisteredSkinBlendControls.ContainsKey(skinName))
+			if (!RegisteredSkinBlendControls.ContainsKey(skinNameToken))
 			{
-				RegisteredSkinBlendControls[skinName] = new DictionaryList<string, BlendControlTemplate>();
+				RegisteredSkinBlendControls[skinNameToken] = new DictionaryList<string, BlendControlTemplate>();
 			}
 
-			if (!RegisteredSkinBlendControls[skinName].ContainsKey(blendName))
+			if (!RegisteredSkinBlendControls[skinNameToken].ContainsKey(blendName))
 			{
-				RegisteredSkinBlendControls[skinName][blendName] = new List<BlendControlTemplate>();
+				RegisteredSkinBlendControls[skinNameToken][blendName] = new List<BlendControlTemplate>();
 			}
 
-			RegisteredSkinBlendControls[skinName][blendName] = templates;
+			RegisteredSkinBlendControls[skinNameToken][blendName] = templates;
 		}
 
-		public static void RegisterSkinBlendControl(string skinName, string blendName, BlendControlTemplate template)
+		public static void RegisterSkinBlendControl(string skinNameToken, string blendName, BlendControlTemplate template)
 		{
-			RegisterSkinBlendControl(skinName, blendName, new List<BlendControlTemplate>() { template });
+			RegisterSkinBlendControl(skinNameToken, blendName, new List<BlendControlTemplate>() { template });
 		}
 
 		class DictionaryList<K1, V> :
@@ -60,7 +60,7 @@ namespace BodyBlend.Utils
 			public float boneUpdateInterval = 0.015f;
 		}
 
-		public static void ApplyFromRegisteredBlendControls(BodyBlendController controller, GameObject modelObject, string skinName)
+		public static void ApplyFromRegisteredBlendControls(BodyBlendController controller, GameObject modelObject, string skinNameToken)
 		{
 			if (!controller)
 				return;
@@ -68,9 +68,9 @@ namespace BodyBlend.Utils
 			var characterModel = modelObject.GetComponent<CharacterModel>();
 			if (!characterModel) return;
 
-			if (RegisteredSkinBlendControls.ContainsKey(skinName))
+			if (RegisteredSkinBlendControls.ContainsKey(skinNameToken))
 			{
-				foreach (var item in RegisteredSkinBlendControls[skinName])
+				foreach (var item in RegisteredSkinBlendControls[skinNameToken])
 				{
 					ApplyFromTemplates(controller, characterModel, item.Key, item.Value);
 				}

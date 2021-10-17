@@ -85,8 +85,10 @@ namespace BodyBlend
 				Destroy(previousController);
 
 			Debug.Log("Apply Skin Def in BodyBlend: " + self.name);
+			Debug.Log("SkinDef name token: " + self.nameToken);
 
-			if (!BodyBlendUtils.HasRegisteredSkinControl(self.name)) return;
+			// Skin must be registered using nameToken for 
+			if (!BodyBlendUtils.HasRegisteredSkinControl(self.nameToken)) return;
 
 			var controller = modelObject.AddComponent<BodyBlendController>();
 			BodyBlendUtils.ApplyFromRegisteredBlendControls(controller, modelObject, self.name);

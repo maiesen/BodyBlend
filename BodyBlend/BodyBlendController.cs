@@ -31,6 +31,7 @@ namespace BodyBlend
 		private float updateVal2 = 0.0f;
 		public void Update()
 		{
+			// TODO: Only for testing, remove in release build
 			if (Input.GetKey(KeyCode.Period))
 			{
 				updateVal += 0.01f;
