@@ -28,6 +28,7 @@ namespace BodyBlend
 		}
 
 		private float updateVal = 0.0f;
+		private float updateVal2 = 0.0f;
 		public void Update()
 		{
 			if (Input.GetKey(KeyCode.Period))
@@ -40,7 +41,30 @@ namespace BodyBlend
 			}
 			updateVal = Mathf.Clamp01(updateVal);
 
+			if (Input.GetKey(KeyCode.L))
+			{
+				updateVal2 += 0.01f;
+			}
+			if (Input.GetKey(KeyCode.K))
+			{
+				updateVal2 -= 0.01f;
+			}
+			updateVal2 = Mathf.Clamp01(updateVal2);
+
 			SetBlendTargetWeight("Belly", updateVal);
+			SetBlendTargetWeight("Boobs", updateVal2);
+		}
+
+		public void SetBlendLerp(String name, bool enabled, float speed = 1.0f)
+		{
+			if (bodyBlendControls.ContainsKey(name))
+			{
+				foreach (var item in bodyBlendControls[name])
+				{
+					item.SetLerp(enabled, speed);
+				}
+			}
+
 		}
 
 		// Source is required for handling multiple set weight requests

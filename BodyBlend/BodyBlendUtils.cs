@@ -10,7 +10,7 @@ using R2API.Utils;
 
 namespace BodyBlend.Utils
 {
-	class BodyBlendUtils
+	public class BodyBlendUtils
 	{
 		private static NestedDictionaryList<string, string, BlendControlTemplate> RegisteredSkinBlendControls
 			= new NestedDictionaryList<string, string, BlendControlTemplate>();
@@ -27,7 +27,7 @@ namespace BodyBlend.Utils
 				RegisteredSkinBlendControls[skinName][blendName] = new List<BlendControlTemplate>();
 			}
 
-			RegisteredSkinBlendControls[skinName][blendName].AddRange(templates);
+			RegisteredSkinBlendControls[skinName][blendName] = templates;
 		}
 
 		public static void RegisterSkinBlendControl(string skinName, string blendName, BlendControlTemplate template)
@@ -60,7 +60,7 @@ namespace BodyBlend.Utils
 			public float boneUpdateInterval = 0.015f;
 		}
 
-		public static void ApplyRegisteredBlendControls(BodyBlendController controller, GameObject modelObject, string skinName)
+		public static void ApplyFromRegisteredBlendControls(BodyBlendController controller, GameObject modelObject, string skinName)
 		{
 			if (!controller)
 				return;
