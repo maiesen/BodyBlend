@@ -10,7 +10,7 @@ namespace BodyBlend
 	[DisallowMultipleComponent]
 	public class BodyBlendController : MonoBehaviour
 	{
-		private DictionaryList<String, BodyBlendControl> bodyBlendControls = new DictionaryList<String, BodyBlendControl>();
+		private DictionaryList<string, BodyBlendControl> bodyBlendControls = new DictionaryList<string, BodyBlendControl>();
 
 		class DictionaryList<K1, V> :
 			Dictionary<K1, List<V>>{ }
@@ -56,7 +56,7 @@ namespace BodyBlend
 			SetBlendTargetWeight("Boobs", updateVal2);
 		}
 
-		public void SetBlendLerp(String name, bool enabled, float speed = 1.0f)
+		public void SetBlendLerp(string name, bool enabled, float speed = 1.0f)
 		{
 			if (bodyBlendControls.ContainsKey(name))
 			{
@@ -69,7 +69,7 @@ namespace BodyBlend
 		}
 
 		// Source is required for handling multiple set weight requests
-		public void SetBlendTargetWeight(String name, float value, String source = "Default")
+		public void SetBlendTargetWeight(string name, float value, string source = "Default")
 		{
 			if (HasBlendControl(name))
 			{
@@ -78,24 +78,34 @@ namespace BodyBlend
 			}
 		}
 
-		public bool HasBlendControl(String name)
+		// Similar to SetBlendTargetWeight but will instantly set current values to target values
+		public void SetBlendTargetWeightInstant(string name, float value, string source = "Default")
+		{
+			if (HasBlendControl(name))
+			{
+				foreach (var item in bodyBlendControls[name])
+					item.SetTargetWeight(value, source);
+			}
+		}
+
+		public bool HasBlendControl(string name)
 		{
 			return bodyBlendControls.ContainsKey(name);
 		}
 
-		public void AddBlendControl(String name, BodyBlendControl control)
+		public void AddBlendControl(string name, BodyBlendControl control)
 		{
 			if (!bodyBlendControls.ContainsKey(name))
 				bodyBlendControls[name] = new List<BodyBlendControl>();
 			bodyBlendControls[name].Add(control);
 		}
 
-		public void RemoveBlendControl(String name)
+		public void RemoveBlendControl(string name)
 		{
 			bodyBlendControls.Remove(name);
 		}
 
-		public List<BodyBlendControl> GetBlendControl(String name)
+		public List<BodyBlendControl> GetBlendControl(string name)
 		{
 			return bodyBlendControls[name];
 		}
@@ -146,7 +156,7 @@ namespace BodyBlend
 		private List<DynBoneValue> defaultDynBoneValues = null;
 		private float elapsedTime = 0f;
 		private float currentWeight = 0f;
-		private Dictionary<String, float> targetWeights = new Dictionary<String, float>(){{"Default", 0f}};
+		private Dictionary<string, float> targetWeights = new Dictionary<string, float>(){{"Default", 0f}};
 
 		public BodyBlendControl(SkinnedMeshRenderer targetRenderer = null)
 		{
@@ -179,7 +189,7 @@ namespace BodyBlend
 			boneUpdateInterval = interval;
 		}
 
-		public void SetTargetWeight(float weight, String source)
+		public void SetTargetWeight(float weight, string source)
 		{
 			// TODO: Consider case where blendshape go beyond range [0, 1]
 			targetWeights[source] = Mathf.Clamp(weight, 0f, 1f);

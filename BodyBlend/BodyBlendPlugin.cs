@@ -2,10 +2,12 @@
 using MonoMod.RuntimeDetour;
 using RoR2;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using R2API;
 using R2API.Utils;
 using BodyBlend.Utils;
+using OnRoR2 = On.RoR2;
 using static BodyBlend.Utils.BodyBlendUtils;
 
 namespace BodyBlend
@@ -22,8 +24,7 @@ namespace BodyBlend
         GUID = "com." + AUTHOR + "." + MODNAME,
         VERSION = "0.0.1";
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "Awake is automatically called by Unity")]
-    private void Awake() //Called when loaded by BepInEx.
+		private void Awake() //Called when loaded by BepInEx.
     {
 			new Hook(
 				typeof(SkinDef).GetMethod(nameof(SkinDef.Apply)),
@@ -39,8 +40,7 @@ namespace BodyBlend
 			//PreRegisterSkins();
 		}
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Code Quality", "IDE0051:Remove unused private members", Justification = "Start is automatically called by Unity")]
-    private void Start() //Called at the first frame of the game.
+		private void Start() //Called at the first frame of the game.
     {
 
     }
@@ -91,7 +91,7 @@ namespace BodyBlend
 			if (!BodyBlendUtils.HasRegisteredSkinControl(self.nameToken)) return;
 
 			var controller = modelObject.AddComponent<BodyBlendController>();
-			BodyBlendUtils.ApplyFromRegisteredBlendControls(controller, modelObject, self.name);
+			BodyBlendUtils.ApplyFromRegisteredBlendControls(controller, modelObject, self.nameToken);
 		}
   }
 }
