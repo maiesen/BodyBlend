@@ -46,7 +46,7 @@ namespace BodyBlend.Utils
 			public int targetRendererIndex = -1;
 			public Dictionary<int, AnimationCurve> blendShapeControls = new Dictionary<int, AnimationCurve>();
 			// Mode for calculating target weight
-			public BodyBlendControl.WeightMode targetWeightMode = BodyBlendControl.WeightMode.MAXIMUM;
+			public WeightMode targetWeightMode = WeightMode.MAXIMUM;
 
 			// This is for controlling how inert the bone is as weight gets updated
 			// Which bones will be affected. Currently only matching the first appearances in the tree.

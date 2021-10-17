@@ -7,6 +7,13 @@ using UnityEngine;
 
 namespace BodyBlend
 {
+	public enum WeightMode
+	{
+		AVERAGE,
+		MINIMUM,
+		MAXIMUM
+	}
+
 	[DisallowMultipleComponent]
 	public class BodyBlendController : MonoBehaviour
 	{
@@ -65,26 +72,30 @@ namespace BodyBlend
 					item.SetLerp(enabled, speed);
 				}
 			}
-
 		}
 
+		// Set the target blend weight for a given blend name and source. setInstant determines if the change happen instantly
 		// Source is required for handling multiple set weight requests
-		public void SetBlendTargetWeight(string name, float value, string source = "Default")
+		public void SetBlendTargetWeight(string name, float value, string source = "Default", bool setInstant = false)
 		{
 			if (HasBlendControl(name))
 			{
 				foreach (var item in bodyBlendControls[name])
+				{
 					item.SetTargetWeight(value, source);
+					if (setInstant)
+						item.Update(0f, true);
+				}
 			}
 		}
 
-		// Similar to SetBlendTargetWeight but will instantly set current values to target values
-		public void SetBlendTargetWeightInstant(string name, float value, string source = "Default")
+		// For removing target weight so that it will no longer affect the calculation
+		public void RemoveBlendTargetWeight(string name, string source = "Default")
 		{
 			if (HasBlendControl(name))
 			{
 				foreach (var item in bodyBlendControls[name])
-					item.SetTargetWeight(value, source);
+					item.RemoveTargetWeight(source);
 			}
 		}
 
@@ -93,25 +104,20 @@ namespace BodyBlend
 			return bodyBlendControls.ContainsKey(name);
 		}
 
-		public void AddBlendControl(string name, BodyBlendControl control)
+		internal void AddBlendControl(string name, BodyBlendControl control)
 		{
 			if (!bodyBlendControls.ContainsKey(name))
 				bodyBlendControls[name] = new List<BodyBlendControl>();
 			bodyBlendControls[name].Add(control);
 		}
 
-		public void RemoveBlendControl(string name)
+		internal void RemoveBlendControl(string name)
 		{
 			bodyBlendControls.Remove(name);
 		}
-
-		public List<BodyBlendControl> GetBlendControl(string name)
-		{
-			return bodyBlendControls[name];
-		}
 	}
 
-	public class BodyBlendControl : UnityEngine.Object
+	internal class BodyBlendControl : UnityEngine.Object
 	{
 		private static readonly FieldInfo dynBoneParticlesField = typeof(DynamicBone).GetField("m_Particles", BindingFlags.NonPublic | BindingFlags.Instance);
 		private static readonly FieldInfo dynBoneTotalLengthField = typeof(DynamicBone).GetField("m_BoneTotalLength", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -129,13 +135,6 @@ namespace BodyBlend
 				m_Stiffness = s;
 				m_Inert = i;
 			}
-		}
-
-		public enum WeightMode
-		{
-			AVERAGE,
-			MINIMUM,
-			MAXIMUM
 		}
 
 		public Dictionary<int, AnimationCurve> blendShapeControls = new Dictionary<int, AnimationCurve>();
@@ -195,11 +194,16 @@ namespace BodyBlend
 			targetWeights[source] = Mathf.Clamp(weight, 0f, 1f);
 		}
 
-		public void Update(float t)
+		public void RemoveTargetWeight(string source)
+		{
+			targetWeights.Remove(source);
+		}
+
+		public void Update(float t, bool forceNoLerp = false)
 		{
 			// Check if dynamic bones need updating
 			elapsedTime += t;
-			bool doBoneUpdate = false;
+			bool doBoneUpdate = false || forceNoLerp;
 			if (boneUpdateInterval <= 0f)
 			{
 				doBoneUpdate = true;
@@ -211,7 +215,7 @@ namespace BodyBlend
 				doBoneUpdate = true;
 			}
 
-			if (useLerp)
+			if (useLerp && !forceNoLerp)
 				currentWeight = Mathf.Lerp(currentWeight, GetTargetWeight(), t * lerpSpeed);
 			else
 				currentWeight = GetTargetWeight();
