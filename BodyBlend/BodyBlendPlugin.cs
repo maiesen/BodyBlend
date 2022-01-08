@@ -2,15 +2,13 @@
 using BodyBlend.Utils;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
-using R2API.Utils;
 using RoR2;
 using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace BodyBlend
 {
-	//[BepInDependency("com.bepis.r2api")]
-	//[R2APISubmoduleDependency(nameof(yourDesiredAPI))]
 	[BepInDependency(SuspiciousTentacle.SuspiciousTentacle.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
 	[BepInPlugin(GUID, MODNAME, VERSION)]
 	public sealed class BodyBlendPlugin : BaseUnityPlugin
@@ -19,7 +17,7 @@ namespace BodyBlend
 				MODNAME = "BodyBlend",
 				AUTHOR = "Maiesen",
 				GUID = "com." + AUTHOR + "." + MODNAME,
-				VERSION = "0.1.0";
+				VERSION = "0.2.0";
 
 		private void Awake() //Called when loaded by BepInEx.
 		{
@@ -69,6 +67,9 @@ namespace BodyBlend
 		//}
 		#endregion
 
+		private const BindingFlags AllFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+																					BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
 		public static void SkinDefApply(Action<SkinDef, GameObject> orig, SkinDef self, GameObject modelObject)
 		{
 			orig(self, modelObject);
@@ -90,37 +91,45 @@ namespace BodyBlend
 		internal static void ILModelSkinControllerApplySkin(ILContext il)
 		{
 			ILCursor c = new ILCursor(il);
-			c.GotoNext(
+			var ILFound = c.TryGotoNext(
+				MoveType.After,
 				x => x.MatchLdarg(0),
 				x => x.MatchCall<Component>("get_gameObject"),
-				x => x.MatchCallvirt<SkinDef>("Apply")
+				x => x.MatchCallvirt<SkinDef>(nameof(SkinDef.Apply))
 				);
-			c.Index += 3;
-			c.Emit(OpCodes.Ldarg_0);
-			c.Emit(OpCodes.Ldfld, typeof(ModelSkinController).GetFieldCached("skins"));
-			c.Emit(OpCodes.Ldarg_1);
-			c.Emit(OpCodes.Ldelem_Ref);
-			c.Emit(OpCodes.Ldarg_0);
-			c.Emit(OpCodes.Call, typeof(Component).GetMethod("get_gameObject"));
-			c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBodyBlend);
+			if (ILFound)
+			{
+				c.Emit(OpCodes.Ldarg_0);
+				c.Emit(OpCodes.Ldfld, typeof(ModelSkinController)
+					.GetField(nameof(ModelSkinController.skins), AllFlags));
+				c.Emit(OpCodes.Ldarg_1);
+				c.Emit(OpCodes.Ldelem_Ref);
+				c.Emit(OpCodes.Ldarg_0);
+				c.Emit(OpCodes.Call, typeof(Component).GetMethod("get_gameObject"));
+				c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBodyBlend);
+			}
 		}
 
 		internal static void ILCharacterSelectControllerApplySkin(ILContext il)
 		{
 			ILCursor c = new ILCursor(il);
-			c.GotoNext(
-				// Could break when index changes. Try to use reflection in the future.
-				x => x.MatchLdloc(5),
-				x => x.MatchLdloc(6),
+			int localSkinDefIndex = -1;
+			int localGameObjectIndex = -1;
+
+			var ILFound = c.TryGotoNext(
+				MoveType.After,
+				x => x.MatchLdloc(out localSkinDefIndex),
+				x => x.MatchLdloc(out localGameObjectIndex),
 				x => x.MatchCallvirt<Component>("get_gameObject"),
-				x => x.MatchCall<SkinDef>("Apply")
+				x => x.MatchCall<SkinDef>(nameof(SkinDef.Apply))
 				);
-			//Debug.Log(c);
-			c.Index += 4;
-			c.Emit(OpCodes.Ldloc_S, (byte)5);
-			c.Emit(OpCodes.Ldloc_S, (byte)6);
-			c.Emit(OpCodes.Callvirt, typeof(Component).GetMethod("get_gameObject"));
-			c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBodyBlend);
+			if (ILFound)
+			{
+				c.Emit(OpCodes.Ldloc_S, (byte) localSkinDefIndex);
+				c.Emit(OpCodes.Ldloc_S, (byte) localGameObjectIndex);
+				c.Emit(OpCodes.Callvirt, typeof(Component).GetMethod("get_gameObject"));
+				c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBodyBlend);
+			}
 		}
 
 		public static void SetUpBodyBlend(SkinDef skinDef, GameObject model)
@@ -128,9 +137,6 @@ namespace BodyBlend
 			var previousController = model.GetComponent<BodyBlendController>();
 			if (previousController)
 				Destroy(previousController);
-
-			//Debug.Log("Apply Skin Def in BodyBlend: " + skinDef.name);
-			//Debug.Log("SkinDef name token: " + skinDef.nameToken);
 
 			// Skin must be registered using nameToken for 
 			if (!BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken)) return;

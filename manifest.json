@@ -1,0 +1,10 @@
+{
+    "name": "BodyBlend",
+    "version_number": "0.2.0",
+    "website_url": "https://github.com/thunderstore-io",
+    "description": "A modding API for controlling blend shapes.",
+    "dependencies": [
+        "bbepis-BepInExPack-5.4.1801",
+		"RiskofThunder-HookGenPatcher-1.2.1"
+    ]
+}
