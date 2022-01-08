@@ -1,10 +1,7 @@
-﻿using System;
+﻿using MonoMod.RuntimeDetour;
 using RoR2;
-using UnityEngine;
-using System.Collections.Generic;
-using System.Text;
+using System;
 using ST = SuspiciousTentacle;
-using MonoMod.RuntimeDetour;
 
 namespace BodyBlend
 {
@@ -18,7 +15,7 @@ namespace BodyBlend
 			{
 				if (_enabled == null)
 				{
-					_enabled = BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey(SuspiciousTentacle.SuspiciousTentacle.PluginGUID);
+					_enabled = BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("com.RuneFoxMods.SuspiciousTentacle");
 				}
 				return (bool)_enabled;
 			}
@@ -27,12 +24,9 @@ namespace BodyBlend
 		// TODO: Have this be implemented by Suspicious Tentacle
 		public static void HookGrowthProgress()
 		{
-			if (enabled)
-			{
-				new Hook(
-					typeof(ST.SuspiciousTentacle).GetMethod(nameof(ST.SuspiciousTentacle.GrowthProgress)),
-					typeof(SuspiciousTentacleCompatibility).GetMethod(nameof(OnGrowthProgress)));
-			}
+			new Hook(
+				typeof(ST.SuspiciousTentacle).GetMethod(nameof(ST.SuspiciousTentacle.GrowthProgress)),
+				typeof(SuspiciousTentacleCompatibility).GetMethod(nameof(OnGrowthProgress)));
 		}
 
 		public static float OnGrowthProgress(

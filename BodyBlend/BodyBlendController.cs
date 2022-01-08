@@ -1,6 +1,4 @@
-﻿using RoR2;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -14,13 +12,21 @@ namespace BodyBlend
 		MAXIMUM
 	}
 
+	public enum DynBoneControlMode
+	{
+		ZERO_TO_BASE,
+		FULL_CONTROL,
+		BASE_TO_ONE
+	}
+
 	[DisallowMultipleComponent]
 	public class BodyBlendController : MonoBehaviour
 	{
 		private DictionaryList<string, BodyBlendControl> bodyBlendControls = new DictionaryList<string, BodyBlendControl>();
 
 		class DictionaryList<K1, V> :
-			Dictionary<K1, List<V>>{ }
+			Dictionary<K1, List<V>>
+		{ }
 
 		public void Awake()
 		{
@@ -39,23 +45,24 @@ namespace BodyBlend
 		public void Update()
 		{
 			// TODO: Only for testing, remove in release build
+			float dt = Time.deltaTime;
 			if (Input.GetKey(KeyCode.Period))
 			{
-				updateVal += 0.01f;
+				updateVal += dt;
 			}
 			if (Input.GetKey(KeyCode.Comma))
 			{
-				updateVal -= 0.01f;
+				updateVal -= dt;
 			}
 			updateVal = Mathf.Clamp01(updateVal);
 
 			if (Input.GetKey(KeyCode.L))
 			{
-				updateVal2 += 0.01f;
+				updateVal2 += dt;
 			}
 			if (Input.GetKey(KeyCode.K))
 			{
-				updateVal2 -= 0.01f;
+				updateVal2 -= dt;
 			}
 			updateVal2 = Mathf.Clamp01(updateVal2);
 
@@ -74,7 +81,11 @@ namespace BodyBlend
 			}
 		}
 
+		// TODO: Clarify the time and value of AnimationCurve and how it relate to setting weights of blendshapes
+		// Set blend time?
+
 		// Set the target blend weight for a given blend name and source. setInstant determines if the change happen instantly
+		// Most mods should support weight value from 0f to 1f. Unexpected results may occur if weight value goes above 1f.
 		// Source is required for handling multiple set weight requests
 		public void SetBlendTargetWeight(string name, float value, string source = "Default", bool setInstant = false)
 		{
@@ -128,7 +139,7 @@ namespace BodyBlend
 			public float m_Stiffness;
 			public float m_Inert;
 
-			public DynBoneValue (float d, float e, float s, float i)
+			public DynBoneValue(float d, float e, float s, float i)
 			{
 				m_Damping = d;
 				m_Elasticity = e;
@@ -143,8 +154,12 @@ namespace BodyBlend
 
 		// This is for controlling how inert the bone is as weight gets updated
 		private List<DynamicBone> associatedDynBones = null;
-		// 1 is max Inert while 0 is min Inert
-		private AnimationCurve dynBoneCurve = null;
+		private AnimationCurve dynBoneInertCurve = null;
+		private AnimationCurve dynBoneElasticityCurve = null;
+		private AnimationCurve dynBoneStiffnessCurve = null;
+		private AnimationCurve dynBoneDampingCurve = null;
+		// Determine how bone parameters are adjusted from weight
+		public DynBoneControlMode dynBoneControlMode = DynBoneControlMode.BASE_TO_ONE;
 
 		private SkinnedMeshRenderer targetRenderer;
 
@@ -155,7 +170,7 @@ namespace BodyBlend
 		private List<DynBoneValue> defaultDynBoneValues = null;
 		private float elapsedTime = 0f;
 		private float currentWeight = 0f;
-		private Dictionary<string, float> targetWeights = new Dictionary<string, float>(){{"Default", 0f}};
+		private Dictionary<string, float> targetWeights = new Dictionary<string, float>() { { "Default", 0f } };
 
 		public BodyBlendControl(SkinnedMeshRenderer targetRenderer = null)
 		{
@@ -173,14 +188,21 @@ namespace BodyBlend
 			lerpSpeed = speed;
 		}
 
-		public void SetAssociatedDynBones(List<DynamicBone> bones, AnimationCurve curve)
+		public void SetAssociatedDynBones(
+			List<DynamicBone> bones,
+			AnimationCurve inertCurve = null,
+			AnimationCurve elasticityCurve = null,
+			AnimationCurve stiffnessCurve = null,
+			AnimationCurve dampingCurve = null)
 		{
 			if (bones == null || bones.Count <= 0)
 				return;
 			associatedDynBones = bones;
-			dynBoneCurve = curve;
-			if (associatedDynBones != null)
-				SaveDynBoneValues(associatedDynBones);
+			dynBoneInertCurve = inertCurve;
+			dynBoneElasticityCurve = elasticityCurve;
+			dynBoneStiffnessCurve = stiffnessCurve;
+			dynBoneDampingCurve = dampingCurve;
+			SaveDynBoneValues(associatedDynBones);
 		}
 
 		public void SetBoneUpdateInterval(float interval)
@@ -190,8 +212,7 @@ namespace BodyBlend
 
 		public void SetTargetWeight(float weight, string source)
 		{
-			// TODO: Consider case where blendshape go beyond range [0, 1]
-			targetWeights[source] = Mathf.Clamp(weight, 0f, 1f);
+			targetWeights[source] = weight;
 		}
 
 		public void RemoveTargetWeight(string source)
@@ -229,18 +250,51 @@ namespace BodyBlend
 
 			if (doBoneUpdate && associatedDynBones != null)
 			{
-				float value = dynBoneCurve.Evaluate(currentWeight);
-				for (int i = 0; i < associatedDynBones.Count; i++)
+				SetAssociatedBoneValues();
+			}
+		}
+
+		private void SetAssociatedBoneValues()
+		{
+			float inertValue = dynBoneInertCurve != null ?
+				Mathf.Clamp01(dynBoneInertCurve.Evaluate(currentWeight)) : 0f;
+			float elasticityValue = dynBoneElasticityCurve != null ?
+				Mathf.Clamp01(dynBoneElasticityCurve.Evaluate(currentWeight)) : 0f;
+			float stiffnessValue = dynBoneStiffnessCurve != null ?
+				Mathf.Clamp01(dynBoneStiffnessCurve.Evaluate(currentWeight)) : 0f;
+			float dampingValue = dynBoneDampingCurve != null ?
+				Mathf.Clamp01(dynBoneDampingCurve.Evaluate(currentWeight)) : 0f;
+
+			for (int i = 0; i < associatedDynBones.Count; i++)
+			{
+				switch (dynBoneControlMode)
 				{
-					associatedDynBones[i].m_Inert = Mathf.Lerp(defaultDynBoneValues[i].m_Inert, 1f, value);
-					UpdateDynBoneParameters(associatedDynBones[i]);
+					case DynBoneControlMode.BASE_TO_ONE:
+						associatedDynBones[i].m_Inert = Mathf.Lerp(defaultDynBoneValues[i].m_Inert, 1f, inertValue);
+						associatedDynBones[i].m_Elasticity = Mathf.Lerp(defaultDynBoneValues[i].m_Elasticity, 1f, elasticityValue);
+						associatedDynBones[i].m_Stiffness = Mathf.Lerp(defaultDynBoneValues[i].m_Stiffness, 1f, stiffnessValue);
+						associatedDynBones[i].m_Damping = Mathf.Lerp(defaultDynBoneValues[i].m_Damping, 1f, dampingValue);
+						break;
+					case DynBoneControlMode.ZERO_TO_BASE:
+						associatedDynBones[i].m_Inert = Mathf.Lerp(0f, defaultDynBoneValues[i].m_Inert, inertValue);
+						associatedDynBones[i].m_Elasticity = Mathf.Lerp(0f, defaultDynBoneValues[i].m_Elasticity, elasticityValue);
+						associatedDynBones[i].m_Stiffness = Mathf.Lerp(0f, defaultDynBoneValues[i].m_Stiffness, stiffnessValue);
+						associatedDynBones[i].m_Damping = Mathf.Lerp(0f, defaultDynBoneValues[i].m_Damping, dampingValue);
+						break;
+					case DynBoneControlMode.FULL_CONTROL:
+						associatedDynBones[i].m_Inert = Mathf.Lerp(0f, 1f, inertValue);
+						associatedDynBones[i].m_Elasticity = Mathf.Lerp(0f, 1f, elasticityValue);
+						associatedDynBones[i].m_Stiffness = Mathf.Lerp(0f, 1f, stiffnessValue);
+						associatedDynBones[i].m_Damping = Mathf.Lerp(0f, 1f, dampingValue);
+						break;
 				}
+				UpdateDynBoneParameters(associatedDynBones[i]);
 			}
 		}
 
 		private float GetTargetWeight()
 		{
-			switch(targetWeightMode)
+			switch (targetWeightMode)
 			{
 				case WeightMode.MAXIMUM:
 					return targetWeights.Count > 0 ? targetWeights.Values.Max() : 0f;
@@ -270,7 +324,7 @@ namespace BodyBlend
 
 		private static void UpdateDynBoneParameters(DynamicBone bone)
 		{
-			List<DynamicBone.Particle> particles = (List<DynamicBone.Particle>) dynBoneParticlesField.GetValue(bone);
+			var particles = bone.m_Particles;
 
 			for (int i = 0; i < particles.Count; ++i)
 			{
@@ -281,7 +335,7 @@ namespace BodyBlend
 				p.m_Inert = bone.m_Inert;
 				p.m_Radius = bone.m_Radius;
 
-				var length = (float) dynBoneTotalLengthField.GetValue(bone);
+				var length = bone.m_BoneTotalLength;
 
 				if (length > 0)
 				{

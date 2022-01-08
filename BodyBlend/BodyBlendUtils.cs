@@ -1,12 +1,8 @@
-﻿using BepInEx;
-using MonoMod.RuntimeDetour;
-using RoR2;
+﻿using RoR2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using R2API;
-using R2API.Utils;
 
 namespace BodyBlend.Utils
 {
@@ -26,7 +22,7 @@ namespace BodyBlend.Utils
 			{
 				RegisteredSkinBlendControls[skinNameToken][blendName] = new List<BlendControlTemplate>();
 			}
-
+			// TODO: Consider cases where appending to templates is preferable
 			RegisteredSkinBlendControls[skinNameToken][blendName] = templates;
 		}
 
@@ -36,14 +32,17 @@ namespace BodyBlend.Utils
 		}
 
 		class DictionaryList<K1, V> :
-			Dictionary<K1, List<V>>{ }
+			Dictionary<K1, List<V>>
+		{ }
 		class NestedDictionaryList<K1, K2, V> :
-			Dictionary<K1, DictionaryList<K2, V>>{ }
+			Dictionary<K1, DictionaryList<K2, V>>
+		{ }
 
 		public class BlendControlTemplate
 		{
-			// Which mesh to target at.
+			// Which mesh renderer to target at.
 			public int targetRendererIndex = -1;
+			// Dictionary for describing the blendShape values over weight values
 			public Dictionary<int, AnimationCurve> blendShapeControls = new Dictionary<int, AnimationCurve>();
 			// Mode for calculating target weight
 			public WeightMode targetWeightMode = WeightMode.MAXIMUM;
@@ -51,8 +50,12 @@ namespace BodyBlend.Utils
 			// This is for controlling how inert the bone is as weight gets updated
 			// Which bones will be affected. Currently only matching the first appearances in the tree.
 			public List<String> associatedDynBoneNames = new List<String>();
-			// Value of 1 is max Inert while 0 is min Inert
-			public AnimationCurve dynBoneCurve = null;
+			public AnimationCurve dynBoneInertCurve = null;
+			public AnimationCurve dynBoneElasticityCurve = null;
+			public AnimationCurve dynBoneStiffnessCurve = null;
+			public AnimationCurve dynBoneDampingCurve = null;
+			public DynBoneControlMode dynBoneControlMode = DynBoneControlMode.BASE_TO_ONE;
+
 
 			public bool useLerp = true;
 			public float lerpSpeed = 1.0f;
@@ -88,9 +91,16 @@ namespace BodyBlend.Utils
 				{
 					BodyBlendControl control = new BodyBlendControl(renderer);
 					control.blendShapeControls = item.blendShapeControls;
+					control.targetWeightMode = item.targetWeightMode;
 
 					var dynamicBones = FindDynamicBones(charModel, item.associatedDynBoneNames);
-					control.SetAssociatedDynBones(dynamicBones, item.dynBoneCurve);
+					control.SetAssociatedDynBones(
+						dynamicBones,
+						item.dynBoneInertCurve,
+						item.dynBoneElasticityCurve,
+						item.dynBoneStiffnessCurve,
+						item.dynBoneDampingCurve);
+					control.dynBoneControlMode = item.dynBoneControlMode;
 
 					control.SetLerp(item.useLerp, item.lerpSpeed);
 
@@ -112,7 +122,7 @@ namespace BodyBlend.Utils
 			foreach (var name in names)
 			{
 				var bone = FindDynamicBone(charModel, name);
-				if(bone)
+				if (bone)
 					dynamicBones.Add(bone);
 			}
 			return dynamicBones;
@@ -137,7 +147,7 @@ namespace BodyBlend.Utils
 
 			if (boneObject)
 			{
-				return boneObject.gameObject.GetComponent<DynamicBone>();
+				return boneObject.GetComponent<DynamicBone>();
 			}
 			return null;
 		}
@@ -145,7 +155,7 @@ namespace BodyBlend.Utils
 		public static SkinnedMeshRenderer GetRenderer(CharacterModel charModel, int index)
 		{
 			if (index < charModel.baseRendererInfos.Length)
-				return (SkinnedMeshRenderer) charModel.baseRendererInfos[index].renderer;
+				return (SkinnedMeshRenderer)charModel.baseRendererInfos[index].renderer;
 			return null;
 		}
 
