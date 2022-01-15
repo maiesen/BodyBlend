@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace BodyBlend.Utils
 {
-	public class BodyBlendUtils
+	public static class BodyBlendUtils
 	{
 		private static NestedDictionaryList<string, string, BlendControlTemplate> RegisteredSkinBlendControls
 			= new NestedDictionaryList<string, string, BlendControlTemplate>();
@@ -56,6 +56,9 @@ namespace BodyBlend.Utils
 			public AnimationCurve dynBoneDampingCurve = null;
 			public DynBoneControlMode dynBoneControlMode = DynBoneControlMode.BASE_TO_ONE;
 
+			// maxBlend denotes the value the final blendshape is multiplied by
+			// Can be used to customize max size
+			public float maxBlend = 1.0f;
 
 			public bool useLerp = true;
 			public float lerpSpeed = 1.0f;
@@ -63,7 +66,7 @@ namespace BodyBlend.Utils
 			public float boneUpdateInterval = 0.015f;
 		}
 
-		public static void ApplyFromRegisteredBlendControls(BodyBlendController controller, GameObject modelObject, string skinNameToken)
+		public static void ApplyOnlyBonesFromRegisteredBlendControls(this BodyBlendController controller, GameObject modelObject, string skinNameToken)
 		{
 			if (!controller)
 				return;
@@ -75,12 +78,53 @@ namespace BodyBlend.Utils
 			{
 				foreach (var item in RegisteredSkinBlendControls[skinNameToken])
 				{
-					ApplyFromTemplates(controller, characterModel, item.Key, item.Value);
+					controller.ApplyOnlyBonesFromTemplates(characterModel, item.Key, item.Value);
 				}
 			}
 		}
 
-		private static void ApplyFromTemplates(BodyBlendController controller, CharacterModel charModel, string blendName, List<BlendControlTemplate> templates)
+		private static void ApplyOnlyBonesFromTemplates(this BodyBlendController controller, CharacterModel charModel, string blendName, List<BlendControlTemplate> templates)
+		{
+			foreach (var item in templates)
+			{
+				BodyBlendControl control = new BodyBlendControl();
+				control.targetWeightMode = item.targetWeightMode;
+
+				var dynamicBones = FindDynamicBones(charModel, item.associatedDynBoneNames);
+				control.SetAssociatedDynBones(
+					dynamicBones,
+					item.dynBoneInertCurve,
+					item.dynBoneElasticityCurve,
+					item.dynBoneStiffnessCurve,
+					item.dynBoneDampingCurve);
+				control.dynBoneControlMode = item.dynBoneControlMode;
+
+				control.SetLerp(item.useLerp, item.lerpSpeed);
+
+				control.SetBoneUpdateInterval(item.boneUpdateInterval);
+
+				controller.AddBlendControl(blendName, control);
+			}
+		}
+
+			public static void ApplyFromRegisteredBlendControls(this BodyBlendController controller, GameObject modelObject, string skinNameToken)
+		{
+			if (!controller)
+				return;
+
+			var characterModel = modelObject.GetComponent<CharacterModel>();
+			if (!characterModel) return;
+
+			if (RegisteredSkinBlendControls.ContainsKey(skinNameToken))
+			{
+				foreach (var item in RegisteredSkinBlendControls[skinNameToken])
+				{
+					controller.ApplyFromTemplates(characterModel, item.Key, item.Value);
+				}
+			}
+		}
+
+		private static void ApplyFromTemplates(this BodyBlendController controller, CharacterModel charModel, string blendName, List<BlendControlTemplate> templates)
 		{
 			foreach (var item in templates)
 			{
@@ -103,6 +147,8 @@ namespace BodyBlend.Utils
 					control.dynBoneControlMode = item.dynBoneControlMode;
 
 					control.SetLerp(item.useLerp, item.lerpSpeed);
+
+					control.SetMaxBlend(item.maxBlend);
 
 					control.SetBoneUpdateInterval(item.boneUpdateInterval);
 

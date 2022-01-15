@@ -7,9 +7,9 @@ namespace BodyBlend
 {
 	public enum WeightMode
 	{
-		AVERAGE,
-		MINIMUM,
-		MAXIMUM
+		AVERAGE, // Average of all sources
+		MINIMUM, // Minimum of all sources
+		MAXIMUM // Maximum of all sources
 	}
 
 	public enum DynBoneControlMode
@@ -128,7 +128,7 @@ namespace BodyBlend
 		}
 	}
 
-	internal class BodyBlendControl : UnityEngine.Object
+	internal class BodyBlendControl
 	{
 		private static readonly FieldInfo dynBoneParticlesField = typeof(DynamicBone).GetField("m_Particles", BindingFlags.NonPublic | BindingFlags.Instance);
 		private static readonly FieldInfo dynBoneTotalLengthField = typeof(DynamicBone).GetField("m_BoneTotalLength", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -162,6 +162,8 @@ namespace BodyBlend
 		public DynBoneControlMode dynBoneControlMode = DynBoneControlMode.BASE_TO_ONE;
 
 		private SkinnedMeshRenderer targetRenderer;
+
+		private float maxBlend = 1.0f;
 
 		private bool useLerp = true;
 		private float lerpSpeed = 1.0f;
@@ -220,6 +222,11 @@ namespace BodyBlend
 			targetWeights.Remove(source);
 		}
 
+		public void SetMaxBlend(float value)
+		{
+			maxBlend = value;
+		}
+
 		public void Update(float t, bool forceNoLerp = false)
 		{
 			// Check if dynamic bones need updating
@@ -237,20 +244,23 @@ namespace BodyBlend
 			}
 
 			if (useLerp && !forceNoLerp)
-				currentWeight = Mathf.Lerp(currentWeight, GetTargetWeight(), t * lerpSpeed);
+				currentWeight = Mathf.Lerp(currentWeight, GetTargetWeight() * maxBlend, t * lerpSpeed);
 			else
-				currentWeight = GetTargetWeight();
+				currentWeight = GetTargetWeight() * maxBlend;
+
+			if (doBoneUpdate && associatedDynBones != null)
+			{
+				SetAssociatedBoneValues();
+			}
+
+			if (targetRenderer == null)
+				return;
 
 			// Update BlendShapes
 			foreach (var item in blendShapeControls)
 			{
 				float value = item.Value.Evaluate(currentWeight);
 				targetRenderer.SetBlendShapeWeight(item.Key, value * 100f);
-			}
-
-			if (doBoneUpdate && associatedDynBones != null)
-			{
-				SetAssociatedBoneValues();
 			}
 		}
 
@@ -282,6 +292,7 @@ namespace BodyBlend
 						associatedDynBones[i].m_Damping = Mathf.Lerp(0f, defaultDynBoneValues[i].m_Damping, dampingValue);
 						break;
 					case DynBoneControlMode.FULL_CONTROL:
+						// TODO: change to just assignment (no need to lerp)
 						associatedDynBones[i].m_Inert = Mathf.Lerp(0f, 1f, inertValue);
 						associatedDynBones[i].m_Elasticity = Mathf.Lerp(0f, 1f, elasticityValue);
 						associatedDynBones[i].m_Stiffness = Mathf.Lerp(0f, 1f, stiffnessValue);

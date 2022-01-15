@@ -70,24 +70,6 @@ namespace BodyBlend
 		private const BindingFlags AllFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
 																					BindingFlags.Instance | BindingFlags.DeclaredOnly;
 
-		public static void SkinDefApply(Action<SkinDef, GameObject> orig, SkinDef self, GameObject modelObject)
-		{
-			orig(self, modelObject);
-
-			var previousController = modelObject.GetComponent<BodyBlendController>();
-			if (previousController)
-				Destroy(previousController);
-
-			//Debug.Log("Apply Skin Def in BodyBlend: " + self.name);
-			//Debug.Log("SkinDef name token: " + self.nameToken);
-
-			// Skin must be registered using nameToken for 
-			if (!BodyBlendUtils.HasRegisteredSkinControl(self.nameToken)) return;
-
-			var controller = modelObject.AddComponent<BodyBlendController>();
-			BodyBlendUtils.ApplyFromRegisteredBlendControls(controller, modelObject, self.nameToken);
-		}
-
 		internal static void ILModelSkinControllerApplySkin(ILContext il)
 		{
 			ILCursor c = new ILCursor(il);
@@ -125,10 +107,10 @@ namespace BodyBlend
 				);
 			if (ILFound)
 			{
-				c.Emit(OpCodes.Ldloc_S, (byte) localSkinDefIndex);
-				c.Emit(OpCodes.Ldloc_S, (byte) localGameObjectIndex);
+				c.Emit(OpCodes.Ldloc_S, (byte)localSkinDefIndex);
+				c.Emit(OpCodes.Ldloc_S, (byte)localGameObjectIndex);
 				c.Emit(OpCodes.Callvirt, typeof(Component).GetMethod("get_gameObject"));
-				c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBodyBlend);
+				c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBoneOnly);
 			}
 		}
 
@@ -136,13 +118,35 @@ namespace BodyBlend
 		{
 			var previousController = model.GetComponent<BodyBlendController>();
 			if (previousController)
+			{
 				Destroy(previousController);
+			}
 
-			// Skin must be registered using nameToken for 
-			if (!BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken)) return;
+			// Skin must be registered using nameToken for key
+			if (!BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken))
+			{
+				return;
+			}
 
 			var controller = model.AddComponent<BodyBlendController>();
-			BodyBlendUtils.ApplyFromRegisteredBlendControls(controller, model, skinDef.nameToken);
+			controller.ApplyFromRegisteredBlendControls(model, skinDef.nameToken);
+		}
+
+		public static void SetUpBoneOnly(SkinDef skinDef, GameObject model)
+		{
+			var previousController = model.GetComponent<BodyBlendController>();
+			if (previousController)
+			{
+				Destroy(previousController);
+			}
+
+			if (!BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken))
+			{
+				return;
+			}
+
+			var controller = model.AddComponent<BodyBlendController>();
+			controller.ApplyOnlyBonesFromRegisteredBlendControls(model, skinDef.nameToken);
 		}
 	}
 }
