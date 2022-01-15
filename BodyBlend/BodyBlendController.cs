@@ -40,36 +40,6 @@ namespace BodyBlend
 					item2.Update(Time.deltaTime);
 		}
 
-		private float updateVal = 0.0f;
-		private float updateVal2 = 0.0f;
-		public void Update()
-		{
-			// TODO: Only for testing, remove in release build
-			float dt = Time.deltaTime;
-			if (Input.GetKey(KeyCode.Period))
-			{
-				updateVal += dt;
-			}
-			if (Input.GetKey(KeyCode.Comma))
-			{
-				updateVal -= dt;
-			}
-			updateVal = Mathf.Clamp01(updateVal);
-
-			if (Input.GetKey(KeyCode.L))
-			{
-				updateVal2 += dt;
-			}
-			if (Input.GetKey(KeyCode.K))
-			{
-				updateVal2 -= dt;
-			}
-			updateVal2 = Mathf.Clamp01(updateVal2);
-
-			SetBlendTargetWeight("Belly", updateVal);
-			SetBlendTargetWeight("Boobs", updateVal2);
-		}
-
 		public void SetBlendLerp(string name, bool enabled, float speed = 1.0f)
 		{
 			if (bodyBlendControls.ContainsKey(name))
