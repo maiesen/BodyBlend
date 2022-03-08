@@ -1,50 +1,46 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Mono.Cecil" Version="0.11.2" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Mono.Cecil" Version="0.11.2" />
+		<PackageReference Include="RiskOfRain2.GameLibs" Version="1.2.1-r.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>libs\Assembly-CSharp.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="BepInEx">
-      <HintPath>libs\BepInEx.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="MMHOOK_Assembly-CSharp">
-      <HintPath>libs\MMHOOK_Assembly-CSharp.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="MonoMod.RuntimeDetour">
-      <HintPath>libs\core\MonoMod.RuntimeDetour.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="MonoMod.Utils">
-      <HintPath>libs\core\MonoMod.Utils.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="SuspiciousTentacle">
-      <HintPath>libs\SuspiciousTentacle.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>libs\UnityEngine.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>libs\UnityEngine.CoreModule.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="UnityEngine.Networking">
-      <HintPath>libs\UnityEngine.Networking.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
+	<ItemGroup>
+		<Reference Include="BepInEx">
+			<HintPath>..\..\..\..\..\..\AppData\Roaming\Thunderstore Mod Manager\DataFolder\RiskOfRain2\profiles\mod_testing\BepInEx\core\BepInEx.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="MMHOOK_RoR2">
+			<HintPath>..\..\..\..\..\..\AppData\Roaming\Thunderstore Mod Manager\DataFolder\RiskOfRain2\profiles\mod_testing\BepInEx\plugins\MMHOOK\MMHOOK_RoR2.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="MonoMod.RuntimeDetour">
+			<HintPath>..\..\..\..\..\..\AppData\Roaming\Thunderstore Mod Manager\DataFolder\RiskOfRain2\profiles\mod_testing\BepInEx\core\MonoMod.RuntimeDetour.dll</HintPath>
+		</Reference>
+		<Reference Include="MonoMod.Utils">
+			<HintPath>..\..\..\..\..\..\AppData\Roaming\Thunderstore Mod Manager\DataFolder\RiskOfRain2\profiles\mod_testing\BepInEx\core\MonoMod.Utils.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="SuspiciousTentacle">
+			<HintPath>libs\SuspiciousTentacle.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine">
+			<HintPath>..\..\..\..\..\..\..\..\Program Files\Unity Editor\2019.4.26f\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+			<HintPath>..\..\..\..\..\..\..\..\Program Files\Unity Editor\2019.4.26f\Editor\Data\Managed\UnityEngine\UnityEngine.CoreModule.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="UnityEngine.Networking">
+			<HintPath>..\..\..\..\..\..\..\..\Program Files\Unity Editor\2019.4.26f\Editor\Data\Managed\UnityEngine\UnityEngine.Networking.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
 
 </Project>

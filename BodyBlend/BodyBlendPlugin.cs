@@ -17,13 +17,13 @@ namespace BodyBlend
 				MODNAME = "BodyBlend",
 				AUTHOR = "Maiesen",
 				GUID = "com." + AUTHOR + "." + MODNAME,
-				VERSION = "0.2.0";
+				VERSION = "0.2.1";
 
 		private void Awake() //Called when loaded by BepInEx.
 		{
 			// Hook after the usual SkinDef Apply to make sure all dynamic bones have been loaded first
 			IL.RoR2.ModelSkinController.ApplySkin += ILModelSkinControllerApplySkin;
-			IL.RoR2.UI.CharacterSelectController.OnNetworkUserLoadoutChanged += ILCharacterSelectControllerApplySkin;
+			//IL.RoR2.UI.CharacterSelectController.OnNetworkUserLoadoutChanged += ILCharacterSelectControllerApplySkin;
 
 			if (SuspiciousTentacleCompatibility.enabled)
 				SuspiciousTentacleCompatibility.HookGrowthProgress();
@@ -92,6 +92,7 @@ namespace BodyBlend
 			}
 		}
 
+		/*
 		internal static void ILCharacterSelectControllerApplySkin(ILContext il)
 		{
 			ILCursor c = new ILCursor(il);
@@ -113,6 +114,7 @@ namespace BodyBlend
 				c.EmitDelegate<Action<SkinDef, GameObject>>(SetUpBoneOnly);
 			}
 		}
+		*/
 
 		public static void SetUpBodyBlend(SkinDef skinDef, GameObject model)
 		{
