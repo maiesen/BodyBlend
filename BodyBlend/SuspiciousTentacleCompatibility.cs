@@ -34,10 +34,19 @@ namespace BodyBlend
 			ST.SuspiciousTentacle self,
 			CharacterBody body)
 		{
-			BodyBlendController controller = body.modelLocator.modelTransform.gameObject.GetComponent<BodyBlendController>();
 			float value = orig(self, body);
-			if (controller)
-				controller.SetBlendTargetWeight("Belly", value, "SuspiciousTentacle");
+			if (BodyBlendOptions.EnableSusTentacleCompat.Value)
+			{
+				float count = body.inventory.GetItemCount(ST.SuspiciousTentacle.SusTentacleItemDef);
+				BodyBlendController controller = body.modelLocator.modelTransform.gameObject.GetComponent<BodyBlendController>();
+				if (controller)
+				{
+					foreach (var part in BodyBlendOptions.SusTentacleParts)
+					{
+						controller.SetBlendTargetWeight(part, UnityEngine.Mathf.Clamp01(value * count * BodyBlendOptions.SusTentacleSizePerEgg.Value), "SuspiciousTentacle");
+					}
+				}
+			}
 			return value;
 		}
 	}

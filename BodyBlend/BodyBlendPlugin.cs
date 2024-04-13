@@ -6,10 +6,15 @@ using RoR2;
 using System;
 using System.Reflection;
 using UnityEngine;
+using BepInEx.Configuration;
+using System.Collections.Generic;
+using System.IO;
+using RiskOfOptions;
 
 namespace BodyBlend
 {
 	[BepInDependency(SuspiciousTentacle.SuspiciousTentacle.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
+	[BepInDependency("com.rune580.riskofoptions")]
 	[BepInPlugin(GUID, MODNAME, VERSION)]
 	public sealed class BodyBlendPlugin : BaseUnityPlugin
 	{
@@ -17,7 +22,7 @@ namespace BodyBlend
 				MODNAME = "BodyBlend",
 				AUTHOR = "Maiesen",
 				GUID = "com." + AUTHOR + "." + MODNAME,
-				VERSION = "0.2.1";
+				VERSION = "0.3.0";
 
 		private void Awake() //Called when loaded by BepInEx.
 		{
@@ -28,12 +33,45 @@ namespace BodyBlend
 			if (SuspiciousTentacleCompatibility.enabled)
 				SuspiciousTentacleCompatibility.HookGrowthProgress();
 
-			//PreRegisterSkins();
 		}
 
 		private void Start() //Called at the first frame of the game.
 		{
+			var texture = new Texture2D(2, 2, TextureFormat.RGBA32, mipChain: false);
+			using (var memoryStream = new MemoryStream())
+			{
+				Assembly.GetExecutingAssembly().GetManifestResourceStream("BodyBlend.icon.png").CopyTo(memoryStream);
+				texture.LoadImage(memoryStream.ToArray());
+			}
+			var icon = Sprite.Create(texture, new Rect(0f, 0f, texture.height, texture.width), new Vector2(0.5f, 0.5f), 100);
+			ModSettingsManager.SetModIcon(icon);
 
+			RoR2Application.onLoad += OnLoad;
+			SearchConfigJson();
+		}
+
+		private void OnLoad()
+		{
+			// Try to register from json
+			foreach(var skinDef in SkinCatalog.allSkinDefs) {
+				LoadBodyBlendJson(skinDef);
+			}
+
+			// Create/Load configs to RiskOfOptions
+			BodyBlendOptions.InitializeOptions(Config);
+		}
+
+		public static void ReloadJson()
+		{
+			Debug.Log("[BodyBlend] Reloading config files.");
+			SearchConfigJson();
+
+			BodyBlendUtils.ClearRegister();
+			// Reload from Json, should overwrite current settings
+			foreach (var skinDef in SkinCatalog.allSkinDefs)
+			{
+				LoadBodyBlendJson(skinDef, overwrite: true);
+			}
 		}
 
 		#region Skin Preregistration
@@ -118,6 +156,8 @@ namespace BodyBlend
 
 		public static void SetUpBodyBlend(SkinDef skinDef, GameObject model)
 		{
+			if (skinDef.nameToken == "") return;
+
 			var previousController = model.GetComponent<BodyBlendController>();
 			if (previousController)
 			{
@@ -134,21 +174,61 @@ namespace BodyBlend
 			controller.ApplyFromRegisteredBlendControls(model, skinDef.nameToken);
 		}
 
-		public static void SetUpBoneOnly(SkinDef skinDef, GameObject model)
+		//public static void SetUpBoneOnly(SkinDef skinDef, GameObject model)
+		//{
+		//	var previousController = model.GetComponent<BodyBlendController>();
+		//	if (previousController)
+		//	{
+		//		Destroy(previousController);
+		//	}
+
+		//	if (!BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken))
+		//	{
+		//		return;
+		//	}
+
+		//	var controller = model.AddComponent<BodyBlendController>();
+		//	controller.ApplyOnlyBonesFromRegisteredBlendControls(model, skinDef.nameToken);
+		//}
+
+		// Try to load from json into registered skin control dict
+		private static void LoadBodyBlendJson(SkinDef skinDef, bool overwrite = false)
 		{
-			var previousController = model.GetComponent<BodyBlendController>();
-			if (previousController)
-			{
-				Destroy(previousController);
-			}
-
-			if (!BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken))
-			{
+			if (BodyBlendUtils.HasRegisteredSkinControl(skinDef.nameToken) && !overwrite)
 				return;
-			}
 
-			var controller = model.AddComponent<BodyBlendController>();
-			controller.ApplyOnlyBonesFromRegisteredBlendControls(model, skinDef.nameToken);
+			if (!FoundJson.ContainsKey($"{skinDef.nameToken}.json"))
+				return;
+
+			var path = FoundJson[$"{skinDef.nameToken}.json"];
+			Debug.Log($"[BodyBlend] Loading {skinDef.nameToken} BodyBlend config from json.");
+			TextAsset jsonFile = new TextAsset(File.ReadAllText(path));
+
+			if (jsonFile != null)
+			{
+				BodyBlendUtils.RegisterFromJson(skinDef.nameToken, jsonFile);
+			}
+		}
+
+		private static Dictionary<string, string> FoundJson = new Dictionary<string, string>();
+
+		// Search and returns path
+		private static void SearchConfigJson()
+		{
+			FoundJson.Clear();
+
+			var bepinexDir = BepInEx.Paths.BepInExAssemblyDirectory;
+			string pluginsDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(bepinexDir, @"..\plugins\"));
+			var files = Directory.GetFiles(pluginsDir, "*.json", SearchOption.AllDirectories);
+
+			foreach (var file in files)
+			{
+				if (File.Exists(file))
+				{
+					if (System.IO.Path.GetFileName(file) == "manifest.json") continue;
+					FoundJson[System.IO.Path.GetFileName(file)] = file;
+				}
+			}
 		}
 	}
 }
