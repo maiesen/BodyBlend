@@ -40,14 +40,15 @@ namespace BodyBlend
 		private AnimationCurve stiffnessCurve = null;
 		private AnimationCurve dampingCurve = null;
 		// Determine how bone parameters are adjusted from weight
-		private DynBoneControlMode dynBoneControlMode = DynBoneControlMode.BASE_TO_ONE;
+		private DynBoneControlMode dynBoneControlMode = DynBoneControlMode.FULL_CONTROL;
 
 		internal void SetBoneControls(
 			List<DynamicBone> bones,
 			AnimationCurve inertCurve = null,
 			AnimationCurve elasticityCurve = null,
 			AnimationCurve stiffnessCurve = null,
-			AnimationCurve dampingCurve = null)
+			AnimationCurve dampingCurve = null,
+			DynBoneControlMode dynBoneControlMode = DynBoneControlMode.FULL_CONTROL)
 		{
 			if (bones == null || bones.Count <= 0)
 				return;
@@ -56,6 +57,7 @@ namespace BodyBlend
 			this.elasticityCurve = elasticityCurve;
 			this.stiffnessCurve = stiffnessCurve;
 			this.dampingCurve = dampingCurve;
+			this.dynBoneControlMode = dynBoneControlMode;
 			SaveDynBoneValues(dynamicBones);
 		}
 

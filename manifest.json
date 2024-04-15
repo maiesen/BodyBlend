@@ -1,6 +1,6 @@
 {
   "name": "BodyBlend",
-  "version_number": "0.3.0",
+  "version_number": "0.3.1",
   "website_url": "https://github.com/maiesen/BodyBlend",
   "description": "A modding API for controlling blend shapes.",
   "dependencies": [

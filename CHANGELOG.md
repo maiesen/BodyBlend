@@ -1,3 +1,6 @@
+v0.3.1
+- Fix issue with dynamic bone values config.
+
 v0.3.0
 - Rework internal systems to be easier to use with skin mods.
   - Please refer to the new tutorial on the wiki.

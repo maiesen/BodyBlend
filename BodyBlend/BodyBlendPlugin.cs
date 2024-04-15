@@ -22,7 +22,7 @@ namespace BodyBlend
 				MODNAME = "BodyBlend",
 				AUTHOR = "Maiesen",
 				GUID = "com." + AUTHOR + "." + MODNAME,
-				VERSION = "0.3.0";
+				VERSION = "0.3.1";
 
 		private void Awake() //Called when loaded by BepInEx.
 		{

@@ -54,6 +54,12 @@ namespace BodyBlend
 
 	internal static class BBJsonExtensions
 	{
+		private static Dictionary<string, DynBoneControlMode> DynBoneDict = new Dictionary<string, DynBoneControlMode> {
+				{ "ZERO_TO_BASE", DynBoneControlMode.ZERO_TO_BASE },
+				{ "BASE_TO_ONE", DynBoneControlMode.BASE_TO_ONE },
+				{ "FULL_CONTROL", DynBoneControlMode.FULL_CONTROL }
+		};
+
 		public static DictionaryList<string, BlendControlTemplate> ToTemplates(this BBJsonConfig self)
 		{
 			var templateDict = new DictionaryList<string, BlendControlTemplate>();
@@ -103,7 +109,8 @@ namespace BodyBlend
 			template.dynBoneElasticityCurve = self.elasticityCurve.ToAnimationCurve();
 			template.dynBoneStiffnessCurve = self.stiffnessCurve.ToAnimationCurve();
 			template.dynBoneDampingCurve = self.dampingCurve.ToAnimationCurve();
-			template.dynBoneControlMode = (DynBoneControlMode)EnumMapper.Instance.EnumFromString(typeof(DynBoneControlMode), self.controlMode);
+			if (DynBoneDict.ContainsKey(self.controlMode))
+				template.dynBoneControlMode = DynBoneDict[self.controlMode];
 
 			return template;
 		}

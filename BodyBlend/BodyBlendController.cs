@@ -139,10 +139,10 @@ namespace BodyBlend
 			AnimationCurve elasticityCurve = null,
 			AnimationCurve stiffnessCurve = null,
 			AnimationCurve dampingCurve = null,
-			DynBoneControlMode mode = DynBoneControlMode.ZERO_TO_BASE)
+			DynBoneControlMode mode = DynBoneControlMode.FULL_CONTROL)
 		{
 			var boneControl = new DynamicBoneControl();
-			boneControl.SetBoneControls(bones, inertCurve, elasticityCurve, stiffnessCurve, dampingCurve);
+			boneControl.SetBoneControls(bones, inertCurve, elasticityCurve, stiffnessCurve, dampingCurve, mode);
 
 			boneControls.Add(boneControl);
 		}

@@ -82,7 +82,7 @@ namespace BodyBlend.Utils
 			public AnimationCurve dynBoneElasticityCurve = null;
 			public AnimationCurve dynBoneStiffnessCurve = null;
 			public AnimationCurve dynBoneDampingCurve = null;
-			public DynBoneControlMode dynBoneControlMode = DynBoneControlMode.BASE_TO_ONE;
+			public DynBoneControlMode dynBoneControlMode = DynBoneControlMode.FULL_CONTROL;
 		}
 
 		//public static void ApplyOnlyBonesFromRegisteredBlendControls(this BodyBlendController controller, GameObject modelObject, string skinNameToken)
