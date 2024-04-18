@@ -10,6 +10,7 @@ namespace BodyBlend
 	[Serializable]
 	class BBJsonConfig
 	{
+		public string skinName;
 		public List<BBJsonPartControl> parts;
 	}
 

@@ -10,6 +10,7 @@ using BepInEx.Configuration;
 using System.Collections.Generic;
 using System.IO;
 using RiskOfOptions;
+using System.Linq;
 
 namespace BodyBlend
 {
@@ -22,7 +23,7 @@ namespace BodyBlend
 				MODNAME = "BodyBlend",
 				AUTHOR = "Maiesen",
 				GUID = "com." + AUTHOR + "." + MODNAME,
-				VERSION = "0.3.1";
+				VERSION = "0.3.3";
 
 		private void Awake() //Called when loaded by BepInEx.
 		{
@@ -37,6 +38,7 @@ namespace BodyBlend
 
 		private void Start() //Called at the first frame of the game.
 		{
+			// Set icon.png to Risk Of Options
 			var texture = new Texture2D(2, 2, TextureFormat.RGBA32, mipChain: false);
 			using (var memoryStream = new MemoryStream())
 			{
@@ -50,6 +52,8 @@ namespace BodyBlend
 			SearchConfigJson();
 		}
 
+		public static event Action AfterBodyBlendLoaded;
+
 		private void OnLoad()
 		{
 			// Try to register from json
@@ -59,6 +63,8 @@ namespace BodyBlend
 
 			// Create/Load configs to RiskOfOptions
 			BodyBlendOptions.InitializeOptions(Config);
+			AfterBodyBlendLoaded?.Invoke();
+			if (SuspiciousTentacleCompatibility.enabled) SuspiciousTentacleCompatibility.SetupCompatibility();
 		}
 
 		public static void ReloadJson()
@@ -72,6 +78,11 @@ namespace BodyBlend
 			{
 				LoadBodyBlendJson(skinDef, overwrite: true);
 			}
+		}
+
+		public static List<string> GetBodyBlendParts()
+		{
+			return BodyBlendUtils.PartsList.ToList();
 		}
 
 		#region Skin Preregistration

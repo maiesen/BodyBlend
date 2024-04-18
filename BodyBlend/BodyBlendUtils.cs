@@ -10,15 +10,33 @@ namespace BodyBlend.Utils
 	{
 		public static NestedDictionaryList<string, string, BlendControlTemplate> RegisteredSkinBlendControls
 			= new NestedDictionaryList<string, string, BlendControlTemplate>();
+		internal static HashSet<string> PartsList = new HashSet<string>();
+		private static Dictionary<string, string> SkinNameMapping = new Dictionary<string, string>();
 
 		public static void ClearRegister()
 		{
 			RegisteredSkinBlendControls.Clear();
+			PartsList.Clear();
+		}
+
+		public static string GetSkinName(string skinNameToken)
+		{
+			return SkinNameMapping[skinNameToken];
 		}
 
 		public static void RegisterFromJson(string skinNameToken, TextAsset jsonFile)
 		{
 			BBJsonConfig jsonConfig = JsonUtility.FromJson<BBJsonConfig>(jsonFile.text);
+			if (string.IsNullOrEmpty(jsonConfig.skinName))
+			{
+				SkinNameMapping[skinNameToken] = skinNameToken;
+			}
+			else
+			{
+				SkinNameMapping[skinNameToken] = jsonConfig.skinName;
+			}
+
+
 			var templatesDict = jsonConfig.ToTemplates();
 
 			foreach (var template in templatesDict)
@@ -40,6 +58,8 @@ namespace BodyBlend.Utils
 			}
 
 			RegisteredSkinBlendControls[skinNameToken][blendName] = templates;
+
+			PartsList.Add(blendName);
 		}
 
 		public static void RegisterSkinBlendControl(string skinNameToken, string blendName, BlendControlTemplate template)

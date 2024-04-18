@@ -5,6 +5,7 @@ using System.Text;
 
 using BepInEx;
 using BepInEx.Configuration;
+using BodyBlend.Utils;
 using RiskOfOptions;
 using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
@@ -18,10 +19,8 @@ namespace BodyBlend
 		internal static ConfigEntry<bool> UseLerp;
 		internal static ConfigEntry<float> LerpSpeed;
 		internal static ConfigEntry<float> BoneUpdateInterval;
-		internal static ConfigEntry<bool> EnableSusTentacleCompat;
-		internal static ConfigEntry<string> SusTentaclePartsConfig;
-		internal static ConfigEntry<float> SusTentacleSizePerEgg;
 
+		internal static NestedDictionary<string, string, ConfigEntry<float>> MinBlendConfigs = new NestedDictionary<string, string, ConfigEntry<float>>();
 		internal static NestedDictionary<string, string, ConfigEntry<float>> MaxBlendConfigs = new NestedDictionary<string, string, ConfigEntry<float>>();
 		internal static List<string> SusTentacleParts = new List<string>();
 
@@ -54,60 +53,33 @@ namespace BodyBlend
 				"If you have added a new part in the config file, you'll need to restart the game for BodyBlend to work properly.",
 				"Reload Config Files", BodyBlendPlugin.ReloadJson));
 
-			if (SuspiciousTentacleCompatibility.enabled)
-			{
-				EnableSusTentacleCompat = config.Bind("Suspicious Tentacle", "Enable Compatibility", true, "Enable compatibility with Suspicious Tentacle.");
-				ModSettingsManager.AddOption(
-					new CheckBoxOption(EnableSusTentacleCompat, new CheckBoxConfig())
-				);
-
-				SusTentaclePartsConfig = config.Bind<string>(
-					"Suspicious Tentacle",
-					"Affected Parts", "Belly",
-					"Determine which body part will get influenced by BodyBlend. Set multiple parts by separating them with |.\n" +
-					"Example: Belly|Breasts\n" +
-					"Default: Belly"
-				);
-				ModSettingsManager.AddOption(
-					new StringInputFieldOption(SusTentaclePartsConfig, new InputFieldConfig() { submitOn = InputFieldConfig.SubmitEnum.OnExitOrSubmit, checkIfDisabled = GetSusTentacleBodyBlendDisable })
-				);
-				SusTentaclePartsConfig.SettingChanged += OnPartsUpdated;
-				SusTentacleSizePerEgg = config.Bind("Suspicious Tentacle", "Size per Egg", 0.2f, "What percentage of max size each egg contributes to.\n" +
-					"Default: 0.2");
-				ModSettingsManager.AddOption(
-					new StepSliderOption(SusTentacleSizePerEgg, new StepSliderConfig() { min = 0.0f, max = 1.0f, increment = 0.01f, checkIfDisabled = GetSusTentacleBodyBlendDisable })
-				);
-
-				OnPartsUpdated(null, null);
-			}
-
 			foreach (var control in RegisteredSkinBlendControls)
 			{
 				var skinToken = control.Key;
-				var configDict = new Dictionary<string, ConfigEntry<float>>();
+
+				var categoryName = GetSkinName(skinToken);
+				
+				var minConfigDict = new Dictionary<string, ConfigEntry<float>>();
+				var maxConfigDict = new Dictionary<string, ConfigEntry<float>>();
 				foreach (var partControl in control.Value)
 				{
 					var partName = partControl.Key;
-					var configEntry = config.Bind(skinToken, partName, 100f, "Maximum size");
+
+					var minConfigEntry = config.Bind(categoryName, $"Min {partName} Size", 0f, $"Minimum size for the part \"{partName}\".\nBodyBlend will interpolate the size from the minimum value to the maximum value.");
 					ModSettingsManager.AddOption(
-						new SliderOption(configEntry, new SliderConfig { min = 0f, max = 100f })
+						new SliderOption(minConfigEntry, new SliderConfig { min = 0f, max = 100f })
 					);
-					configDict.Add(partName, configEntry);
+					minConfigDict.Add(partName, minConfigEntry);
+
+					var maxConfigEntry = config.Bind(categoryName, $"Max {partName} Size", 100f, $"Maximum size for the part \"{partName}\".\nBodyBlend will interpolate the size from the minimum value to the maximum value.");
+					ModSettingsManager.AddOption(
+						new SliderOption(maxConfigEntry, new SliderConfig { min = 0f, max = 100f })
+					);
+					maxConfigDict.Add(partName, maxConfigEntry);
 				}
-				MaxBlendConfigs.Add(skinToken, configDict);
+				MinBlendConfigs.Add(skinToken, minConfigDict);
+				MaxBlendConfigs.Add(skinToken, maxConfigDict);
 			}
-		}
-
-		private static bool GetSusTentacleBodyBlendDisable()
-		{
-			return !EnableSusTentacleCompat.Value;
-		}
-
-		private static void OnPartsUpdated(object _o, EventArgs _i)
-		{
-			SusTentacleParts.Clear();
-
-			SusTentaclePartsConfig.Value.Split('|').ToList().ForEach(item => SusTentacleParts.Add(item.Trim()));
 		}
 	}
 }

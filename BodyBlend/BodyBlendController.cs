@@ -22,18 +22,27 @@ namespace BodyBlend
 			foreach (var item in bodyBlendControls)
 			{
 				var maxBlend = FetchMaxBlendConfig(item.Key);
+				var minBlend = FetchMinBlendConfig(item.Key);
 				foreach (var item2 in item.Value)
 				{
+					item2.SetMinBlend(minBlend);
 					item2.SetMaxBlend(maxBlend);
 					item2.Update(Time.deltaTime);
 				}
 			}
 		}
 
+		private float FetchMinBlendConfig(string name)
+		{
+			var value = BodyBlendOptions.MinBlendConfigs.GetValue(SkinNameToken, null)?.GetValue(name, null)?.Value;
+			if (value == null) return 0.0f;
+			return (float)value / 100f;
+		}
+
 		private float FetchMaxBlendConfig(string name)
 		{
 			var value = BodyBlendOptions.MaxBlendConfigs.GetValue(SkinNameToken, null)?.GetValue(name, null)?.Value;
-			if (value == null) return 0.0f;
+			if (value == null) return 1.0f;
 			return (float)value / 100f;
 		}
 
@@ -114,6 +123,7 @@ namespace BodyBlend
 
 		private SkinnedMeshRenderer targetRenderer;
 
+		private float minBlend = 0.0f;
 		private float maxBlend = 1.0f;
 
 		private float elapsedTime = 0f;
@@ -162,10 +172,9 @@ namespace BodyBlend
 			targetWeights.Remove(source);
 		}
 
-		public void SetMaxBlend(float value)
-		{
-			maxBlend = value;
-		}
+		public void SetMaxBlend(float value) { maxBlend = value; }
+
+		public void SetMinBlend(float value) { minBlend = value; }
 
 		public void Update(float t, bool forceNoLerp = false)
 		{
@@ -184,15 +193,18 @@ namespace BodyBlend
 			}
 
 			if (BodyBlendOptions.UseLerp.Value && !forceNoLerp)
-				currentWeight = Mathf.Lerp(currentWeight, GetTargetWeight() * maxBlend, t * BodyBlendOptions.LerpSpeed.Value);
+				currentWeight = Mathf.Lerp(currentWeight, GetTargetWeight(), t * BodyBlendOptions.LerpSpeed.Value);
 			else
-				currentWeight = GetTargetWeight() * maxBlend;
+				currentWeight = GetTargetWeight();
+
+			// Lerp currentWeight to configured min to max
+			var displayWeight = Mathf.Lerp(minBlend, maxBlend, currentWeight);
 
 			if (doBoneUpdate && boneControls != null)
 			{
 				foreach (var control in boneControls)
 				{
-					control.UpdateBoneValues(currentWeight);
+					control.UpdateBoneValues(displayWeight);
 				}
 			}
 
@@ -202,7 +214,7 @@ namespace BodyBlend
 			// Update BlendShapes
 			foreach (var item in blendShapeControls)
 			{
-				float value = item.Value.Evaluate(currentWeight);
+				float value = item.Value.Evaluate(displayWeight);
 				targetRenderer.SetBlendShapeWeight(item.Key, value * 100f);
 			}
 		}
