@@ -34,7 +34,7 @@ namespace BodyBlend
 
 		// TODO: Have this be implemented by Suspicious Tentacle
 
-		private static ST.SuspiciousTentacle SuspiciousTentaclePlugin;
+		private static BaseUnityPlugin SuspiciousTentaclePlugin;
 		private static ConfigEntry<bool> EnableSusTentacleCompat;
 
 		private static void FindPluginInstance()
@@ -44,7 +44,7 @@ namespace BodyBlend
 				var metadata = plugin.Value.Metadata;
 				if (metadata.GUID.Equals(ST.SuspiciousTentacle.PluginGUID))
 				{
-					SuspiciousTentaclePlugin = (ST.SuspiciousTentacle)plugin.Value.Instance;
+					SuspiciousTentaclePlugin = plugin.Value.Instance;
 					break;
 				}
 			}
@@ -95,7 +95,7 @@ namespace BodyBlend
 			}
 		}
 
-		public static void CreatePartConfig(ConfigFile config, string part, float defaultInfluence)
+		private static void CreatePartConfig(ConfigFile config, string part, float defaultInfluence)
 		{
 			var influenceConfig = config.Bind<float>(
 					"BodyBlend",
@@ -141,7 +141,7 @@ namespace BodyBlend
 
 			if (!EnableSusTentacleCompat.Value) return;
 
-			var buffIdx = SuspiciousTentaclePlugin.EggGrowthDebuff.buffIndex;
+			var buffIdx = ((ST.SuspiciousTentacle) SuspiciousTentaclePlugin).EggGrowthDebuff.buffIndex;
 			if (!body.HasBuff(buffIdx)) return;
 
 			float progress = 0.0f;

@@ -1,3 +1,6 @@
+v0.3.4
+- Hotfix for BodyBlend failing to load without suspicious tentacle.
+
 v0.3.3
 - Moved Suspicious Tentacle compatibility config out of BodyBlend settings.
 - Made Suspicious Tentacle config easier to use.
